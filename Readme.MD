@@ -3,13 +3,13 @@
 ## Synthetic Dataset
 Raw data generate by: https://github.com/gmission/SCDataGenerator
 
-Raw worker scheme:
+Raw worker data template:
 ```
-id, lat, lon, capacity, activeness, [min_lat, min_lon, max_lat, max_lon], reliability, velocity
+id; lat; lon; capacity; activeness; [min_lat, min_lon, max_lat, max_lon]; reliability; velocity
 ```
-Raw task scheme:
+Raw task data template:
 ```
-lat, lon, arrival_time, expiry_time, requirement, confidence, entropy
+lat; lon; arrival_time; expiry_time; requirement; confidence; entropy
 ```
 worker scheme:
 ```
@@ -17,23 +17,28 @@ lat, lon, min_lat, min_lon, max_lat, max_lon, velocity
 ```
 task scheme:
 ```
-lat, lon, arrival_time, expiry_time, workload, expected_time, penalty_rate, reward
+lat, lon, deadline, workload, expected_time, penalty_rate, reward
 ```
 
 ## Data Generation Rules
+Task deadline:
+```
+expiry_time - arrival_time
+```
+
 Task workload:
 ```
-Uniformly from [2/5 * expiry_time, 2 * expiry_time]
+Uniformly from [2/5 * deadline, 2 * deadline]
 ```
 
 Task expected_time:
 ```
-Uniformly from [2/5 * expiry_time, 3/5 * expiry_time]
+Uniformly from [2/5 * deadline, 3/5 * deadline]
 ```
 
 Task penalty_rate:
 ```
-Uniformly from [0, reward / (expiry_time - expected_time)]
+Uniformly from [0, reward / (deadline - expected_time)]
 ```
 
 Task reward:
