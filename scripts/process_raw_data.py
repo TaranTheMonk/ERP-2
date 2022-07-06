@@ -6,11 +6,13 @@ import pathlib
 RESOURCE_PATH = os.path.join(pathlib.Path(__file__).parent, "../.resources")
 
 
-def process_worker_data():
-    for raw_worker_file in os.listdir(os.path.join(RESOURCE_PATH, "raw_data/worker")):
+def process_worker_data(size: int):
+    for raw_worker_file in os.listdir(
+        os.path.join(RESOURCE_PATH, f"raw_data/worker_{size}")
+    ):
         # read raw data
         with open(
-            os.path.join(RESOURCE_PATH, "raw_data/worker", raw_worker_file), "r"
+            os.path.join(RESOURCE_PATH, f"raw_data/worker_{size}", raw_worker_file), "r"
         ) as f:
             lines = f.readlines()
 
@@ -41,18 +43,20 @@ def process_worker_data():
         df.to_csv(
             os.path.join(
                 RESOURCE_PATH,
-                "processed_data/worker",
+                f"processed_data/worker_{size}",
                 raw_worker_file.split(".")[0] + ".csv",
             ),
             index=False,
         )
 
 
-def process_task_data():
-    for raw_worker_file in os.listdir(os.path.join(RESOURCE_PATH, "raw_data/task")):
+def process_task_data(size: int):
+    for raw_worker_file in os.listdir(
+        os.path.join(RESOURCE_PATH, f"raw_data/task_{size}")
+    ):
         # read raw data
         with open(
-            os.path.join(RESOURCE_PATH, "raw_data/task", raw_worker_file), "r"
+            os.path.join(RESOURCE_PATH, f"raw_data/task_{size}", raw_worker_file), "r"
         ) as f:
             lines = f.readlines()
 
@@ -89,7 +93,7 @@ def process_task_data():
         df.to_csv(
             os.path.join(
                 RESOURCE_PATH,
-                "processed_data/task",
+                f"processed_data/task_{size}",
                 raw_worker_file.split(".")[0] + ".csv",
             ),
             index=False,
@@ -97,5 +101,5 @@ def process_task_data():
 
 
 if __name__ == "__main__":
-    process_worker_data()
-    process_task_data()
+    process_worker_data(size=200)
+    process_task_data(size=200)
