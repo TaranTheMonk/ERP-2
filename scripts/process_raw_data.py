@@ -101,5 +101,6 @@ def process_task_data(size: int):
 
 
 if __name__ == "__main__":
-    process_worker_data(size=200)
-    process_task_data(size=200)
+    for x in range(100, 600, 100):
+        process_worker_data(size=x)
+        process_task_data(size=x)
