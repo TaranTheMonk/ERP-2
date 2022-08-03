@@ -8,7 +8,7 @@ from pulp import (
     lpSum,
     LpContinuous,
     lpDot,
-    value,
+    value, PULP_CBC_CMD, LpStatus,
 )
 from src.pkgs.sovlers.base_solver import BaseSolver
 from src.pkgs.structs.task import Task
@@ -71,7 +71,7 @@ class MIPSolver(BaseSolver):
             A_ij == 0, if any of the two above are violated.
 
             # non-linear constraint
-            sum(s_j.t_e * A_ij) = sum(A_ij * t_ij) + s_j.wl
+            sum(s_j.t_e * A_ij) >= sum(A_ij * t_ij) + s_j.wl
             =====> linearize =====>
             h_ij <= A_ij * M
             h_ij >= -A_ij * M
@@ -81,7 +81,8 @@ class MIPSolver(BaseSolver):
             if A_ij = 0, h_ij = 0.
             if A_ij = 1, h_ij = s_j.t_e
             =====> linearize =====>
-            sum(h_ij) = sum(A_ij * t_ij) + s_j.wl
+            # todo: fix this
+            sum(h_ij) >= sum(A_ij * t_ij) + s_j.wl
 
             # if-else constraints
             if s_i.t_e < s_i.d:
@@ -159,7 +160,8 @@ class MIPSolver(BaseSolver):
                 ):
                     prob += a[i][j] == 0
 
-                prob += -a[i][j] * M <= h[i][j] <= a[i][j] * M
+                prob += h[i][j] <= a[i][j] * M
+                prob += h[i][j] >= -a[i][j] * M
                 prob += h[i][j] <= t_e[j] + (1 - a[i][j]) * M
                 prob += h[i][j] >= t_e[j] - (1 - a[i][j]) * M
 
@@ -167,12 +169,13 @@ class MIPSolver(BaseSolver):
 
         for i in range(len(self.tasks)):
             task = self.tasks[i]
+            # todo: fix this
             prob += (
-                lpSum(reverse_h[i]) == lpDot(reverse_a[i], reverse_t[i]) + task.workload
+                lpSum(reverse_h[i]) >= lpDot(reverse_a[i], reverse_t[i]) + task.workload
             )
 
-            prob += t_e[i] >= task.deadline - M * (1 - delta[i])
             prob += t_e[i] <= task.deadline - 0.001 + M * delta[i]
+            prob += t_e[i] <= task.deadline + M * delta[i]
 
             prob += (
                 r[i]
@@ -193,5 +196,7 @@ class MIPSolver(BaseSolver):
         prob += lpSum(r)
 
         # solve
-        prob.solve()
+        prob.writeLP("problem")
+        status = prob.solve(PULP_CBC_CMD(msg=False))
+        print(LpStatus[status])
         return sum(value(r_i) for r_i in r)
