@@ -220,7 +220,6 @@ class MIPSolver(BaseSolver):
         status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=10))
 
         # debug
-        print(LpStatus[status])
         # task = self.tasks[0]
         # print(task.lat, task.lon)
         # for w in self.workers:
