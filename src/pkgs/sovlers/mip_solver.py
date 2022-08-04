@@ -184,13 +184,16 @@ class MIPSolver(BaseSolver):
             prob += lpSum(reverse_a[i]) >= 1 - M * (1 - beta[i])
             prob += lpSum(reverse_a[i]) <= 0 + M * beta[i]
 
+            # if beta = 0, sum(h) = 0 => t_e >= deadline
+            # if beta = 1, sum(h) = sum(a * t) + wl >= t_e = h
             prob += lpSum(reverse_h[i]) >= lpDot(reverse_a[i], reverse_t[i]) + task.workload - M * (1 - beta[i])
             prob += lpSum(reverse_h[i]) <= lpDot(reverse_a[i], reverse_t[i]) + task.workload + M * (1 - beta[i])
             prob += lpSum(reverse_h[i]) >= 0 - M * beta[i]
             prob += lpSum(reverse_h[i]) <= 0 + M * beta[i]
 
-            prob += t_e[i] >= task.deadline + 0.01 - M * beta[i]
-            prob += t_e[i] <= task.deadline + 0.01 + M * beta[i]
+            # if beta = 0, t_e >= deadline
+            prob += t_e[i] >= task.deadline + 1.0 - M * beta[i]
+            prob += t_e[i] <= task.deadline + 1.0 + M * beta[i]
 
             prob += t_e[i] >= task.deadline - M * (1 - delta[i])
             prob += t_e[i] <= task.deadline - 0.001 + M * delta[i]
@@ -217,7 +220,7 @@ class MIPSolver(BaseSolver):
         status = prob.solve(PULP_CBC_CMD(msg=False))
 
         # debug
-        print(LpStatus[status])
+        # print(LpStatus[status])
         # task = self.tasks[0]
         # print(task.lat, task.lon)
         # for w in self.workers:

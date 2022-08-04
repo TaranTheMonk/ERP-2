@@ -16,65 +16,65 @@ RESOURCE_PATH = os.path.join(
 )
 
 
-def solve(instance_size: int):
+def solve(instance_id: int, instance_size: int):
     # total reward and cost
     r_1, t_1 = [], []
     r_2, t_2 = [], []
     r_3, t_3 = [], []
 
-    for i in range(4, 5):
+    for i in range(30):
         # read workers
         workers = list()
         for w_id, pd_ser in pd.read_csv(
-            os.path.join(RESOURCE_PATH, f"worker_{instance_size}/workers{i}.csv")
+            os.path.join(RESOURCE_PATH, f"worker_{instance_id}/workers{i}.csv")
         ).iterrows():
             workers.append(Worker.from_pd_series(w_id, pd_ser))
 
         # read tasks
         tasks = list()
         for t_id, pd_ser in pd.read_csv(
-            os.path.join(RESOURCE_PATH, f"task_{instance_size}/tasks{i}.csv")
+            os.path.join(RESOURCE_PATH, f"task_{100}/tasks{i}.csv")
         ).iterrows():
             tasks.append(Task.from_pd_series(t_id, pd_ser))
 
-        # # solver 1
-        # greed_by_reward_solver = GreedyByRewardSolver(workers=workers, tasks=tasks)
-        # _r, _t = greed_by_reward_solver.solve()
-        # r_1.append(_r)
-        # t_1.append(_t)
-        #
+        # solver 1
+        greed_by_reward_solver = GreedyByRewardSolver(
+            workers=workers[:instance_size], tasks=tasks[:instance_size]
+        )
+        _r, _t = greed_by_reward_solver.solve()
+        r_1.append(_r)
+        t_1.append(_t)
+
         # solver 2
         greed_by_reward_per_workload_solver = GreedyByRewardPerWorkloadSolver(
-            workers=workers[:50], tasks=tasks[:50]
+            workers=workers[:instance_size], tasks=tasks[:instance_size]
         )
         _r, _t = greed_by_reward_per_workload_solver.solve()
-        print(_r)
         r_2.append(_r)
         t_2.append(_t)
 
         # solver 3
         mip_solver = MIPSolver(
-            workers=workers[:50], tasks=tasks[:50]
+            workers=workers[:instance_size], tasks=tasks[:instance_size]
         )
         _r, _t = mip_solver.solve()
-        print(_r)
         r_3.append(_r)
         t_3.append(_t)
 
     print("\n")
     print(f"instance size: {instance_size}")
     print("#########################")
-    # print(f"greedy by reward solver:")
-    # print(f"avg_reward: {mean(r_1)}, avg_time: {mean(t_1)}")
-    # print("\n")
-    # print(f"greedy by reward per workload solver:")
-    # print(f"avg_reward: {mean(r_2)}, avg_time: {mean(t_2)}")
-    # print("\n")
+    print(f"greedy by reward solver:")
+    print(f"avg_reward: {mean(r_1)}, avg_time: {mean(t_1)}")
+    print("\n")
+    print(f"greedy by reward per workload solver:")
+    print(f"avg_reward: {mean(r_2)}, avg_time: {mean(t_2)}")
+    print("\n")
     print(f"MIP solver:")
     print(f"avg_reward: {mean(r_3)}, avg_time: {mean(t_3)}")
     print("\n")
 
 
 if __name__ == "__main__":
-    for x in range(100, 200, 100):
-        solve(x)
+    for x in range(10, 110, 10):
+        solve(instance_id=100, instance_size=x)
