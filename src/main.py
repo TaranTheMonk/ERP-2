@@ -12,7 +12,7 @@ from src.pkgs.structs.task import Task
 from src.pkgs.structs.worker import Worker
 
 RESOURCE_PATH = os.path.join(
-    pathlib.Path(__file__).parent, "../.resources/processed_data"
+    pathlib.Path(__file__).parent, "../resources/processed_data"
 )
 
 
@@ -22,7 +22,7 @@ def solve(instance_id: int, instance_size: int):
     r_2, t_2 = [], []
     r_3, t_3 = [], []
 
-    for i in range(30):
+    for i in range(3):
         # read workers
         workers = list()
         for w_id, pd_ser in pd.read_csv(
@@ -58,21 +58,22 @@ def solve(instance_id: int, instance_size: int):
             workers=workers[:instance_size], tasks=tasks[:instance_size]
         )
         _r, _t = mip_solver.solve()
-        r_3.append(_r)
-        t_3.append(_t)
+        if _r > 0.0:
+            r_3.append(_r)
+            t_3.append(_t)
 
-    print("\n")
+    print("")
     print(f"instance size: {instance_size}")
     print("#########################")
     print(f"greedy by reward solver:")
     print(f"avg_reward: {mean(r_1)}, avg_time: {mean(t_1)}")
-    print("\n")
+    print("#########################")
     print(f"greedy by reward per workload solver:")
     print(f"avg_reward: {mean(r_2)}, avg_time: {mean(t_2)}")
-    print("\n")
+    print("#########################")
     print(f"MIP solver:")
     print(f"avg_reward: {mean(r_3)}, avg_time: {mean(t_3)}")
-    print("\n")
+    print("#########################")
 
 
 if __name__ == "__main__":

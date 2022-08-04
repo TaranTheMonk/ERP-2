@@ -3,7 +3,7 @@ import random
 import pandas
 import pathlib
 
-RESOURCE_PATH = os.path.join(pathlib.Path(__file__).parent, "../.resources")
+RESOURCE_PATH = os.path.join(pathlib.Path(__file__).parent, "../resources")
 
 
 def process_worker_data(size: int):

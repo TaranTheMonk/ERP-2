@@ -220,7 +220,7 @@ class MIPSolver(BaseSolver):
         status = prob.solve(PULP_CBC_CMD(msg=False))
 
         # debug
-        # print(LpStatus[status])
+        print(LpStatus[status])
         # task = self.tasks[0]
         # print(task.lat, task.lon)
         # for w in self.workers:
@@ -238,6 +238,6 @@ class MIPSolver(BaseSolver):
         # print("\n")
 
         if status is LpStatusInfeasible:
-            raise ValueError("Infeasible problem detected!")
+            return 0.0
         else:
             return sum(value(r_i) for r_i in r)
