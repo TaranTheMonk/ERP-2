@@ -58,9 +58,8 @@ def solve(instance_id: int, instance_size: int):
             workers=workers[:instance_size], tasks=tasks[:instance_size]
         )
         _r, _t = mip_solver.solve()
-        if _r > 0.0:
-            r_3.append(_r)
-            t_3.append(_t)
+        r_3.append(_r)
+        t_3.append(_t)
 
     print("")
     print(f"instance size: {instance_size}")
@@ -77,5 +76,7 @@ def solve(instance_id: int, instance_size: int):
 
 
 if __name__ == "__main__":
-    for x in range(10, 110, 10):
-        solve(instance_id=100, instance_size=x)
+    # for x in range(10, 100, 10):
+    #     solve(instance_id=100, instance_size=x)
+    for x in range(100, 200, 10):
+        solve(instance_id=200, instance_size=x)
