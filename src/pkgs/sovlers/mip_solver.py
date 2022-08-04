@@ -10,7 +10,8 @@ from pulp import (
     lpDot,
     value,
     PULP_CBC_CMD,
-    LpStatus, LpStatusInfeasible,
+    LpStatus,
+    LpStatusInfeasible,
 )
 from src.pkgs.sovlers.base_solver import BaseSolver
 from src.pkgs.structs.task import Task
@@ -114,12 +115,12 @@ class MIPSolver(BaseSolver):
         for i in range(len(self.workers)):
             for j in range(len(self.tasks)):
                 _ = travel_time(
-                        self.workers[i].lat,
-                        self.workers[i].lon,
-                        self.tasks[j].lat,
-                        self.tasks[j].lon,
-                        self.workers[i].velocity,
-                    )
+                    self.workers[i].lat,
+                    self.workers[i].lon,
+                    self.tasks[j].lat,
+                    self.tasks[j].lon,
+                    self.workers[i].velocity,
+                )
                 t[i][j] = _
                 reverse_t[j][i] = _
 
@@ -148,7 +149,14 @@ class MIPSolver(BaseSolver):
 
         t_e = list()
         for i in range(len(self.tasks)):
-            t_e.append(LpVariable(f"t_e_{i}", lowBound=0.0, cat=LpContinuous))
+            t_e.append(
+                LpVariable(
+                    f"t_e_{i}",
+                    lowBound=0.0,
+                    upBound=self.tasks[i].deadline + 1.0,
+                    cat=LpContinuous,
+                )
+            )
 
         delta = list()
         beta = list()
@@ -160,7 +168,12 @@ class MIPSolver(BaseSolver):
         reverse_h = [[0] * len(self.workers) for _ in range(len(self.tasks))]
         for i in range(len(self.workers)):
             for j in range(len(self.tasks)):
-                _ = LpVariable(f"h_{i}_{j}", lowBound=0.0, cat=LpContinuous)
+                _ = LpVariable(
+                    f"h_{i}_{j}",
+                    lowBound=0.0,
+                    upBound=self.tasks[j].deadline,
+                    cat=LpContinuous,
+                )
                 h[i][j] = _
                 reverse_h[j][i] = _
 
@@ -186,8 +199,12 @@ class MIPSolver(BaseSolver):
 
             # if beta = 0, sum(h) = 0 => t_e >= deadline
             # if beta = 1, sum(h) = sum(a * t) + wl >= t_e = h
-            prob += lpSum(reverse_h[i]) >= lpDot(reverse_a[i], reverse_t[i]) + task.workload - M * (1 - beta[i])
-            prob += lpSum(reverse_h[i]) <= lpDot(reverse_a[i], reverse_t[i]) + task.workload + M * (1 - beta[i])
+            prob += lpSum(reverse_h[i]) >= lpDot(
+                reverse_a[i], reverse_t[i]
+            ) + task.workload - M * (1 - beta[i])
+            prob += lpSum(reverse_h[i]) <= lpDot(
+                reverse_a[i], reverse_t[i]
+            ) + task.workload + M * (1 - beta[i])
             prob += lpSum(reverse_h[i]) >= 0 - M * beta[i]
             prob += lpSum(reverse_h[i]) <= 0 + M * beta[i]
 
@@ -196,7 +213,7 @@ class MIPSolver(BaseSolver):
             prob += t_e[i] <= task.deadline + 1.0 + M * beta[i]
 
             prob += t_e[i] >= task.deadline - M * (1 - delta[i])
-            prob += t_e[i] <= task.deadline - 0.001 + M * delta[i]
+            prob += t_e[i] <= task.deadline + M * delta[i]
 
             prob += (
                 r[i]
@@ -217,7 +234,8 @@ class MIPSolver(BaseSolver):
         prob += lpSum(r)
 
         # solve
-        status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=10))
+        status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=15))
+        print(LpStatus[status])
 
         # debug
         # task = self.tasks[0]

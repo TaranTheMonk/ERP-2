@@ -22,7 +22,7 @@ def solve(instance_id: int, instance_size: int):
     r_2, t_2 = [], []
     r_3, t_3 = [], []
 
-    for i in range(3):
+    for i in [1]:
         # read workers
         workers = list()
         for w_id, pd_ser in pd.read_csv(
@@ -33,7 +33,7 @@ def solve(instance_id: int, instance_size: int):
         # read tasks
         tasks = list()
         for t_id, pd_ser in pd.read_csv(
-            os.path.join(RESOURCE_PATH, f"task_{100}/tasks{i}.csv")
+            os.path.join(RESOURCE_PATH, f"task_{instance_id}/tasks{i}.csv")
         ).iterrows():
             tasks.append(Task.from_pd_series(t_id, pd_ser))
 
@@ -76,7 +76,7 @@ def solve(instance_id: int, instance_size: int):
 
 
 if __name__ == "__main__":
-    # for x in range(10, 100, 10):
-    #     solve(instance_id=100, instance_size=x)
-    for x in range(100, 200, 10):
-        solve(instance_id=200, instance_size=x)
+    for x in range(10, 110, 10):
+        solve(instance_id=100, instance_size=x)
+    # for x in range(100, 210, 10):
+    #     solve(instance_id=200, instance_size=x)
