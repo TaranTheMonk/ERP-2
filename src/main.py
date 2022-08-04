@@ -22,7 +22,7 @@ def solve(instance_size: int):
     r_2, t_2 = [], []
     r_3, t_3 = [], []
 
-    for i in range(3):
+    for i in range(1):
         # read workers
         workers = list()
         for w_id, pd_ser in pd.read_csv(
@@ -38,22 +38,22 @@ def solve(instance_size: int):
             tasks.append(Task.from_pd_series(t_id, pd_ser))
 
         # solver 1
-        # greed_by_reward_solver = GreedyByRewardSolver(workers=workers, tasks=tasks)
-        # _r, _t = greed_by_reward_solver.solve()
-        # r_1.append(_r)
-        # t_1.append(_t)
-        #
-        # # solver 2
-        # greed_by_reward_per_workload_solver = GreedyByRewardPerWorkloadSolver(
-        #     workers=workers, tasks=tasks
-        # )
-        # _r, _t = greed_by_reward_per_workload_solver.solve()
-        # r_2.append(_r)
-        # t_2.append(_t)
+        greed_by_reward_solver = GreedyByRewardSolver(workers=workers, tasks=tasks)
+        _r, _t = greed_by_reward_solver.solve()
+        r_1.append(_r)
+        t_1.append(_t)
+
+        # solver 2
+        greed_by_reward_per_workload_solver = GreedyByRewardPerWorkloadSolver(
+            workers=workers, tasks=tasks
+        )
+        _r, _t = greed_by_reward_per_workload_solver.solve()
+        r_2.append(_r)
+        t_2.append(_t)
 
         # solver 3
         mip_solver = MIPSolver(
-            workers=workers[:1], tasks=tasks[:1]
+            workers=workers, tasks=tasks
         )
         _r, _t = mip_solver.solve()
         print(_r)
@@ -63,17 +63,17 @@ def solve(instance_size: int):
     print("\n")
     print(f"instance size: {instance_size}")
     print("#########################")
-    # print(f"greedy by reward solver:")
-    # print(f"avg_reward: {mean(r_1)}, avg_time: {mean(t_1)}")
-    # print("\n")
-    # print(f"greedy by reward per workload solver:")
-    # print(f"avg_reward: {mean(r_2)}, avg_time: {mean(t_2)}")
-    # print("\n")
+    print(f"greedy by reward solver:")
+    print(f"avg_reward: {mean(r_1)}, avg_time: {mean(t_1)}")
+    print("\n")
+    print(f"greedy by reward per workload solver:")
+    print(f"avg_reward: {mean(r_2)}, avg_time: {mean(t_2)}")
+    print("\n")
     print(f"MIP solver:")
     print(f"avg_reward: {mean(r_3)}, avg_time: {mean(t_3)}")
     print("\n")
 
 
 if __name__ == "__main__":
-    for x in range(100, 200, 100):
+    for x in range(100, 600, 100):
         solve(x)

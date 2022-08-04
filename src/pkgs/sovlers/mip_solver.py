@@ -8,7 +8,9 @@ from pulp import (
     lpSum,
     LpContinuous,
     lpDot,
-    value, PULP_CBC_CMD, LpStatus,
+    value,
+    PULP_CBC_CMD,
+    LpStatus,
 )
 from src.pkgs.sovlers.base_solver import BaseSolver
 from src.pkgs.structs.task import Task
@@ -56,7 +58,7 @@ class MIPSolver(BaseSolver):
         s_i.t_e: stands for i-th task's finish time, continuous.
         r_i: stands for i-th task's reward
         delta_ij: used for conditional constraints, binary.
-        h_ij: used for linearizing the non-linear constraint.
+        h_ij: used for linearizing the non-linear constraint, continues.
 
 
 
@@ -71,18 +73,17 @@ class MIPSolver(BaseSolver):
             A_ij == 0, if any of the two above are violated.
 
             # non-linear constraint
-            sum(s_j.t_e * A_ij) >= sum(A_ij * t_ij) + s_j.wl
+            s_j.t_e == (sum(A_ij * t_ij) + s_j.wl) / sum(A_ij)
+            s_j.t_e * sum(A_ij) == (sum(A_ij * t_ij) + s_j.wl)
             =====> linearize =====>
+            h_ij >= A_ij * M
             h_ij <= A_ij * M
-            h_ij >= -A_ij * M
-            h_ij <= s_j.t_e + (1 - A_ij) * M
-            h_ij >= s_j.t_e - (1 - A_ij) * M
 
             if A_ij = 0, h_ij = 0.
-            if A_ij = 1, h_ij = s_j.t_e
+            if A_ij = 1, -M <= h_ij <= M
             =====> linearize =====>
-            # todo: fix this
-            sum(h_ij) >= sum(A_ij * t_ij) + s_j.wl
+            sum(h_ij) == sum(A_ij * t_ij) + s_j.wl
+            s_i.t_e = h_ij
 
             # if-else constraints
             if s_i.t_e < s_i.d:
@@ -101,6 +102,7 @@ class MIPSolver(BaseSolver):
             r_i >= (s_i.maxR - (s_i.t_e - s_i.e) * s_i.pr) - M * delta_i
             r_i <= M * (1 - delta_i)
             r_i >= -M * (1 - delta_i)
+            r_i <= s_i.maxR, in case finish before the expected time
         """
         # compute travel time
         t = [[0] * len(self.tasks) for _ in range(len(self.workers))]
@@ -123,7 +125,14 @@ class MIPSolver(BaseSolver):
         # create variables
         r = list()
         for i in range(len(self.tasks)):
-            r.append(LpVariable(f"r_{i}", cat=LpContinuous))
+            r.append(
+                LpVariable(
+                    f"r_{i}",
+                    lowBound=0.0,
+                    upBound=self.tasks[i].reward,
+                    cat=LpContinuous,
+                )
+            )
 
         a = [[0] * len(self.tasks) for _ in range(len(self.workers))]
         reverse_a = [[0] * len(self.workers) for _ in range(len(self.tasks))]
@@ -135,7 +144,7 @@ class MIPSolver(BaseSolver):
 
         t_e = list()
         for i in range(len(self.tasks)):
-            t_e.append(LpVariable(f"t_e_{i}", cat=LpContinuous))
+            t_e.append(LpVariable(f"t_e_{i}", lowBound=0.0, cat=LpContinuous))
 
         delta = list()
         for i in range(len(self.tasks)):
@@ -145,7 +154,7 @@ class MIPSolver(BaseSolver):
         reverse_h = [[0] * len(self.workers) for _ in range(len(self.tasks))]
         for i in range(len(self.workers)):
             for j in range(len(self.tasks)):
-                _ = LpVariable(f"h_{i}_{j}", cat=LpContinuous)
+                _ = LpVariable(f"h_{i}_{j}", lowBound=0.0, cat=LpContinuous)
                 h[i][j] = _
                 reverse_h[j][i] = _
 
@@ -162,20 +171,18 @@ class MIPSolver(BaseSolver):
 
                 prob += h[i][j] <= a[i][j] * M
                 prob += h[i][j] >= -a[i][j] * M
-                prob += h[i][j] <= t_e[j] + (1 - a[i][j]) * M
-                prob += h[i][j] >= t_e[j] - (1 - a[i][j]) * M
+                prob += t_e[j] <= h[i][j] + (1 - a[i][j]) * M
+                prob += t_e[j] >= h[i][j] - (1 - a[i][j]) * M
 
             prob += lpSum(a[i]) <= 1
 
         for i in range(len(self.tasks)):
             task = self.tasks[i]
-            # todo: fix this
             prob += (
-                lpSum(reverse_h[i]) >= lpDot(reverse_a[i], reverse_t[i]) + task.workload
+                lpSum(reverse_h[i]) == lpDot(reverse_a[i], reverse_t[i]) + task.workload
             )
-
+            prob += t_e[i] >= task.deadline - M * (1 - delta[i])
             prob += t_e[i] <= task.deadline - 0.001 + M * delta[i]
-            prob += t_e[i] <= task.deadline + M * delta[i]
 
             prob += (
                 r[i]
@@ -197,6 +204,8 @@ class MIPSolver(BaseSolver):
 
         # solve
         prob.writeLP("problem")
-        status = prob.solve(PULP_CBC_CMD(msg=False))
+        status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=3))
+
+        # debug
         print(LpStatus[status])
         return sum(value(r_i) for r_i in r)
