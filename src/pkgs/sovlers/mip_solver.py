@@ -212,6 +212,7 @@ class MIPSolver(BaseSolver):
             prob += t_e[i] >= task.deadline + 1.0 - M * beta[i]
             prob += t_e[i] <= task.deadline + 1.0 + M * beta[i]
 
+            # prob += t_e[i] <= task.deadline - epsilon + M * delta[i]
             prob += t_e[i] >= task.deadline - M * (1 - delta[i])
             prob += t_e[i] <= task.deadline + M * delta[i]
 
