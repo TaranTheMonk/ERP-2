@@ -214,7 +214,6 @@ class MIPSolver(BaseSolver):
         prob += lpSum(r)
 
         # solve
-        prob.writeLP("problem_file")
         status = prob.solve(PULP_CBC_CMD(msg=False))
 
         # debug
