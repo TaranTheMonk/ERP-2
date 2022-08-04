@@ -203,7 +203,6 @@ class MIPSolver(BaseSolver):
         prob += lpSum(r)
 
         # solve
-        prob.writeLP("problem")
         status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=3))
 
         # debug
