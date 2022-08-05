@@ -78,5 +78,5 @@ def solve(instance_id: int, instance_size: int):
 if __name__ == "__main__":
     for x in range(10, 110, 10):
         solve(instance_id=100, instance_size=x)
-    # for x in range(100, 210, 10):
-    #     solve(instance_id=200, instance_size=x)
+    for x in range(100, 210, 10):
+        solve(instance_id=200, instance_size=x)

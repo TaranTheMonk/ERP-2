@@ -235,7 +235,7 @@ class MIPSolver(BaseSolver):
         prob += lpSum(r)
 
         # solve
-        status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=15))
+        status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=1200))
         print(LpStatus[status])
 
         # debug
