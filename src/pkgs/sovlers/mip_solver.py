@@ -9,9 +9,8 @@ from pulp import (
     LpContinuous,
     lpDot,
     value,
-    PULP_CBC_CMD,
     LpStatus,
-    LpStatusInfeasible,
+    LpStatusInfeasible, CPLEX_CMD,
 )
 from src.pkgs.sovlers.base_solver import BaseSolver
 from src.pkgs.structs.task import Task
@@ -24,13 +23,13 @@ class MIPSolver(BaseSolver):
         self.workers = workers
         self.tasks = tasks
 
-    def solve(self) -> Tuple[float, float]:
+    def solve(self) -> Tuple[float, float, float]:
         start = time.time()
-        reward = self._mip_solve()
+        reward, solved = self._mip_solve()
         end = time.time()
-        return reward, end - start
+        return reward, solved, end - start
 
-    def _mip_solve(self) -> float:
+    def _mip_solve(self) -> Tuple[float, float]:
         """
         Constants:
         s_i: stands for i-th task:
@@ -183,8 +182,8 @@ class MIPSolver(BaseSolver):
                 if not is_worker_available(self.workers[i], self.tasks[j]):
                     prob += a[i][j] == 0
 
-                prob += h[i][j] <= a[i][j] * M
-                prob += h[i][j] >= -a[i][j] * M
+                prob += h[i][j] <= 0.001 + a[i][j] * M
+                prob += h[i][j] >= -0.001 - a[i][j] * M
                 prob += h[i][j] <= t_e[j] + (1 - a[i][j]) * M
                 prob += h[i][j] >= t_e[j] - (1 - a[i][j]) * M
 
@@ -205,8 +204,8 @@ class MIPSolver(BaseSolver):
             prob += lpSum(reverse_h[i]) <= lpDot(
                 reverse_a[i], reverse_t[i]
             ) + task.workload + M * (1 - beta[i])
-            prob += lpSum(reverse_h[i]) >= 0 - M * beta[i]
-            prob += lpSum(reverse_h[i]) <= 0 + M * beta[i]
+            prob += lpSum(reverse_h[i]) >= -0.001 - M * beta[i]
+            prob += lpSum(reverse_h[i]) <= 0.001 + M * beta[i]
 
             # if beta = 0, t_e >= deadline
             prob += t_e[i] >= task.deadline + 1.0 - M * beta[i]
@@ -217,16 +216,16 @@ class MIPSolver(BaseSolver):
             prob += t_e[i] <= task.deadline + M * delta[i]
 
             prob += (
-                r[i]
-                <= task.reward
-                - (t_e[i] - task.expected_time) * task.penalty_rate
-                + M * delta[i]
+                    r[i]
+                    <= task.reward
+                    - (t_e[i] - task.expected_time) * task.penalty_rate
+                    + M * delta[i]
             )
             prob += (
-                r[i]
-                >= task.reward
-                - (t_e[i] - task.expected_time) * task.penalty_rate
-                - M * delta[i]
+                    r[i]
+                    >= task.reward
+                    - (t_e[i] - task.expected_time) * task.penalty_rate
+                    - M * delta[i]
             )
             prob += r[i] <= M * (1 - delta[i])
             prob += r[i] >= -M * (1 - delta[i])
@@ -235,27 +234,16 @@ class MIPSolver(BaseSolver):
         prob += lpSum(r)
 
         # solve
-        status = prob.solve(PULP_CBC_CMD(msg=False, timeLimit=1200))
-        print(LpStatus[status])
+        status = prob.solve(CPLEX_CMD(msg=False, gapRel=0.1))
 
-        # debug
-        # task = self.tasks[0]
-        # print(task.lat, task.lon)
-        # for w in self.workers:
-        #     print(w.min_lat, w.max_lat, w.min_lon, w.max_lon)
-        #
-        # print(f"woker assigned: {value(a[0][0]), value(a[1][0])}")
-        # print(f"task assigned: {value(beta[0])}")
-        # print(f"max reward: {task.reward}")
-        # print(f"worker time: {value(h[0][0]), value(h[1][0])}")
-        # print(f"finish time: {value(t_e[0])}")
-        # print(f"expected time: {task.expected_time}")
-        # print(f"deadline: {task.deadline}")
-        # print(f"delta: {value(delta[0])}")
-        # print(f"true reward: {value(r[0])}")
-        # print("\n")
+        if LpStatus[status] == "Optimal":
+            reward = 0.0
+            solved = 0
+            for i in range(len(self.tasks)):
+                if value(r[i]) > 0.01:
+                    reward += value(r[i])
+                    solved += 1
 
-        if status is LpStatusInfeasible:
-            return 0.0
+            return reward, solved
         else:
-            return sum(value(r_i) for r_i in r)
+            return -1, -1

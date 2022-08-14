@@ -15,7 +15,7 @@ class GreedyByRewardPerWorkloadSolver(GreedyByRewardSolver):
     3. use worker set that maximize the reward.
     4. try finish as more tasks as possible.
     """
-    def greedy_solve(self) -> float:
+    def greedy_solve(self) -> Tuple[float, float]:
         # desc sort tasks by reward
         self.tasks.sort(key=lambda x: x.reward / x.workload, reverse=True)
 
@@ -23,6 +23,7 @@ class GreedyByRewardPerWorkloadSolver(GreedyByRewardSolver):
         workers_set = set(self.workers)
         assigned_workers = set()
         reward = 0.0
+        solved = 0
         for t in self.tasks:
             best_reward = 0.0
             best_workers = list()
@@ -56,4 +57,7 @@ class GreedyByRewardPerWorkloadSolver(GreedyByRewardSolver):
             for w in best_workers:
                 assigned_workers.add(w)
 
-        return reward
+            if reward > 0:
+                solved += 1
+
+        return reward, solved

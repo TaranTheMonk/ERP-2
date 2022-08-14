@@ -19,7 +19,7 @@ class GreedyByRewardSolver(BaseSolver):
         self.workers = workers
         self.tasks = tasks
 
-    def greedy_solve(self) -> float:
+    def greedy_solve(self) -> Tuple[float, float]:
         # desc sort tasks by reward
         self.tasks.sort(key=lambda x: x.reward, reverse=True)
 
@@ -27,6 +27,7 @@ class GreedyByRewardSolver(BaseSolver):
         workers_set = set(self.workers)
         assigned_workers = set()
         reward = 0.0
+        solved = 0
         for t in self.tasks:
             best_reward = 0.0
             best_workers = list()
@@ -40,7 +41,7 @@ class GreedyByRewardSolver(BaseSolver):
             if len(available_workers) == 0:
                 continue
 
-            # select workers from close to from
+            # select workers from close to far
             for i in range(1, len(available_workers)):
                 finish_time = get_finish_time(available_workers[:i], t)
 
@@ -60,10 +61,13 @@ class GreedyByRewardSolver(BaseSolver):
             for w in best_workers:
                 assigned_workers.add(w)
 
-        return reward
+            if reward > 0:
+                solved += 1
 
-    def solve(self) -> Tuple[float, float]:
+        return reward, solved
+
+    def solve(self) -> Tuple[float, float, float]:
         start = time.time()
-        reward = self.greedy_solve()
+        reward, solved = self.greedy_solve()
         end = time.time()
-        return reward, end - start
+        return reward, solved, end - start
