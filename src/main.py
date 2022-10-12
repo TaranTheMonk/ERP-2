@@ -3,6 +3,7 @@ from statistics import mean
 import pandas as pd
 import pathlib
 
+from src.pkgs.sovlers.batch_mip_solver import BatchMIPSolver
 from src.pkgs.sovlers.greedy_by_reward_per_workload_solver import (
     GreedyByRewardPerWorkloadSolver,
 )
@@ -21,6 +22,7 @@ def solve(instance_id: int, instance_size: int):
     r_1, solved_1, t_1 = [], [], []
     r_2, solved_2, t_2 = [], [], []
     r_3, solved_3, t_3 = [], [], []
+    r_4, solved_4, t_4 = [], [], []
 
     tmp = {"instance_size": instance_size}
 
@@ -67,6 +69,16 @@ def solve(instance_id: int, instance_size: int):
             solved_3.append(_solved)
             t_3.append(_t)
 
+        # solver 4
+        batch_mip_solver = BatchMIPSolver(
+            n=5, workers=workers[:instance_size], tasks=tasks[:instance_size]
+        )
+        _r, _solved, _t = batch_mip_solver.solve()
+        if _r >= 0:
+            r_4.append(_r)
+            solved_4.append(_solved)
+            t_4.append(_t)
+
     print("")
     print(f"instance size: {instance_size}")
     print("#########################")
@@ -80,6 +92,10 @@ def solve(instance_id: int, instance_size: int):
     print(f"avg_reward: {mean(r_3)}, avg_time: {mean(t_3)}, avg_solved: {mean(solved_3)}")
     print(f"solved: {len(r_3)}")
     print("#########################")
+    print(f"Batch MIP solver:")
+    print(f"avg_reward: {mean(r_4)}, avg_time: {mean(t_4)}, avg_solved: {mean(solved_4)}")
+    print(f"solved: {len(r_4)}")
+    print("#########################")
 
     tmp["r1"] = mean(r_1)
     tmp["solved1"] = mean(solved_1)
@@ -92,6 +108,10 @@ def solve(instance_id: int, instance_size: int):
     tmp["r3"] = mean(r_3)
     tmp["solved3"] = mean(solved_3)
     tmp["t3"] = mean(t_3)
+
+    tmp["r4"] = mean(r_4)
+    tmp["solved4"] = mean(solved_4)
+    tmp["t4"] = mean(t_4)
 
     return tmp
 
@@ -107,7 +127,10 @@ if __name__ == "__main__":
         "t2": list(),
         "r3": list(),
         "solved3": list(),
-        "t3": list()
+        "t3": list(),
+        "r4": list(),
+        "solved4": list(),
+        "t4": list()
     }
 
     for x in range(10, 110, 10):
@@ -120,4 +143,4 @@ if __name__ == "__main__":
         for k in res.keys():
             res[k].append(_res[k])
 
-    pd.DataFrame(res).to_csv("result.csv", index=False)
+    pd.DataFrame(res).to_csv("../resources/results/result_with_batch_oct_12.csv", index=False)
