@@ -83,7 +83,7 @@ def solve(instance_id: int, worker_size: int, task_size: int):
 
         # solver 5
         batch_mip_solver = BatchWithBacklogMIPSolver(
-            n=3, backlog_size=min(worker_size, task_size) // 9, workers=workers[:worker_size], tasks=tasks[:task_size]
+            n=3, backlog_size=max(worker_size, task_size) // 9, workers=workers[:worker_size], tasks=tasks[:task_size]
         )
         _r, _solved, _t = batch_mip_solver.solve()
         if _r >= 0:
@@ -157,22 +157,22 @@ if __name__ == "__main__":
         "t5": list()
     }
 
-    for x in range(10, 110, 30):
+    for x in range(10, 110, 50):
         for y in range(10, 110, 30):
             _res = solve(instance_id=100, worker_size=x, task_size=y)
             for k in res.keys():
                 res[k].append(_res[k])
 
-    for x in range(110, 210, 30):
+    for x in range(110, 210, 50):
         for y in range(110, 210, 30):
             _res = solve(instance_id=200, worker_size=x, task_size=y)
             for k in res.keys():
                 res[k].append(_res[k])
 
-    for x in range(210, 250, 30):
-        for y in range(210, 250, 30):
+    for x in range(210, 260, 50):
+        for y in range(210, 260, 30):
             _res = solve(instance_id=300, worker_size=x, task_size=y)
             for k in res.keys():
                 res[k].append(_res[k])
 
-    pd.DataFrame(res).to_csv("../resources/results/result_with_batch_oct_21.csv", index=False)
+    pd.DataFrame(res).to_csv("../resources/results/result_with_batch_oct_21_fix_w.csv", index=False)
