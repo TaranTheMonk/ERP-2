@@ -143,7 +143,7 @@ if __name__ == "__main__":
         for k in res.keys():
             res[k].append(_res[k])
 
-    for x in range(210, 280, 10):
+    for x in range(210, 250, 10):
         _res = solve(instance_id=300, instance_size=x)
         for k in res.keys():
             res[k].append(_res[k])
