@@ -157,22 +157,62 @@ if __name__ == "__main__":
         "t5": list()
     }
 
-    for x in range(10, 110, 50):
-        for y in range(10, 110, 30):
+    for x in [50]:
+        for y in range(10, 110, 10):
             _res = solve(instance_id=100, worker_size=x, task_size=y)
             for k in res.keys():
                 res[k].append(_res[k])
 
-    for x in range(110, 210, 50):
-        for y in range(110, 210, 30):
+    for x in [100]:
+        for y in range(50, 160, 10):
             _res = solve(instance_id=200, worker_size=x, task_size=y)
             for k in res.keys():
                 res[k].append(_res[k])
 
-    for x in range(210, 260, 50):
-        for y in range(210, 260, 30):
-            _res = solve(instance_id=300, worker_size=x, task_size=y)
+    for x in [150]:
+        for y in range(100, 210, 10):
+            _res = solve(instance_id=200, worker_size=x, task_size=y)
             for k in res.keys():
                 res[k].append(_res[k])
 
-    pd.DataFrame(res).to_csv("../resources/results/result_with_batch_oct_21_fix_w.csv", index=False)
+    pd.DataFrame(res).to_csv("../resources/results/result_oct_21_fix_w.csv", index=False)
+
+    res = {
+        "worker_size": list(),
+        "task_size": list(),
+        "r1": list(),
+        "solved1": list(),
+        "t1": list(),
+        "r2": list(),
+        "solved2": list(),
+        "t2": list(),
+        "r3": list(),
+        "solved3": list(),
+        "t3": list(),
+        "r4": list(),
+        "solved4": list(),
+        "t4": list(),
+        "r5": list(),
+        "solved5": list(),
+        "t5": list()
+    }
+
+    for x in [50]:
+        for y in range(10, 110, 10):
+            _res = solve(instance_id=100, worker_size=y, task_size=x)
+            for k in res.keys():
+                res[k].append(_res[k])
+
+    for x in [100]:
+        for y in range(50, 160, 10):
+            _res = solve(instance_id=200, worker_size=y, task_size=x)
+            for k in res.keys():
+                res[k].append(_res[k])
+
+    for x in [150]:
+        for y in range(100, 210, 10):
+            _res = solve(instance_id=200, worker_size=y, task_size=x)
+            for k in res.keys():
+                res[k].append(_res[k])
+
+    pd.DataFrame(res).to_csv("../resources/results/result_oct_21_fix_t.csv", index=False)
