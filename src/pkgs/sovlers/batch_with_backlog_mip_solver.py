@@ -1,3 +1,4 @@
+import random
 import time
 from typing import Tuple, List, Iterable
 from src.pkgs.sovlers.base_solver import BaseSolver
@@ -6,25 +7,44 @@ from src.pkgs.structs.task import Task
 from src.pkgs.structs.worker import Worker
 
 
-class BatchMIPSolver(BaseSolver):
-    def __init__(self, n: int, workers: List[Worker], tasks: List[Task]):
+class BatchWithBacklogMIPSolver(BaseSolver):
+    def __init__(self, n: int, backlog_size: int, workers: List[Worker], tasks: List[Task]):
         """
         @param n: solver splits the map to n * n squares for batching.
+        @param backlog_size: backlog size
         @param workers:
         @param tasks:
         """
         self.n = n
+        self.backlog_size = backlog_size
         self.workers = workers
         self.tasks = tasks
 
     def solve(self) -> Tuple[float, float, float]:
         reward, solved = 0.0, 0.0
         start = time.time()
+        backlog_w = list()
+        backlog_t = list()
         for w, t in self.batching():
             if len(w) > 0 and len(t) > 0:
-                _reward, _solved, _, _ = MIPSolver(w, t).solve()
+                w += backlog_w
+                t += backlog_t
+
+                _reward, _solved, _, assignments = MIPSolver(w, t).solve()
                 reward += _reward
                 solved += _solved
+
+                # update backlog
+                w_id_set = set()
+                t_id_set = set()
+                for w_id, t_id in assignments:
+                    w_id_set.add(w_id)
+                    t_id_set.add(t_id)
+                backlog_w = list(filter(lambda x: x.id not in w_id_set, w))
+                backlog_t = list(filter(lambda x: x.id not in t_id_set, t))
+                backlog_w = random.sample(backlog_w, k=min(self.backlog_size, len(backlog_w)))
+                backlog_t = random.sample(backlog_t, k=min(self.backlog_size, len(backlog_t)))
+
         end = time.time()
         return reward, solved, end - start
 

@@ -1,5 +1,5 @@
 import time
-from typing import Tuple, List
+from typing import Tuple, List, Set
 from pulp import (
     LpProblem,
     LpMaximize,
@@ -23,13 +23,13 @@ class MIPSolver(BaseSolver):
         self.workers = workers
         self.tasks = tasks
 
-    def solve(self) -> Tuple[float, float, float]:
+    def solve(self) -> Tuple[float, float, float, List[Tuple[int, int]]]:
         start = time.time()
-        reward, solved = self._mip_solve()
+        reward, solved, assignments = self._mip_solve()
         end = time.time()
-        return reward, solved, end - start
+        return reward, solved, end - start, assignments
 
-    def _mip_solve(self) -> Tuple[float, float]:
+    def _mip_solve(self) -> Tuple[float, float, List[Tuple[int, int]]]:
         """
         Constants:
         s_i: stands for i-th task:
@@ -244,6 +244,12 @@ class MIPSolver(BaseSolver):
                     reward += value(r[i])
                     solved += 1
 
-            return reward, solved
+            assignments = list()
+            for i in range(len(self.workers)):
+                for j in range(len(self.tasks)):
+                    if value(a[i][j]) == 1.0:
+                        assignments.append((self.workers[i].id, self.tasks[j].id))
+
+            return reward, solved, assignments
         else:
-            return -1, -1
+            return -1, -1, list()

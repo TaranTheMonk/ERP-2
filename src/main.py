@@ -2,8 +2,9 @@ import os
 from statistics import mean
 import pandas as pd
 import pathlib
-
+import random
 from src.pkgs.sovlers.batch_mip_solver import BatchMIPSolver
+from src.pkgs.sovlers.batch_with_backlog_mip_solver import BatchWithBacklogMIPSolver
 from src.pkgs.sovlers.greedy_by_reward_per_workload_solver import (
     GreedyByRewardPerWorkloadSolver,
 )
@@ -17,33 +18,34 @@ RESOURCE_PATH = os.path.join(
 )
 
 
-def solve(instance_id: int, instance_size: int):
+def solve(instance_id: int, worker_size: int, task_size: int):
     # results
     r_1, solved_1, t_1 = [], [], []
     r_2, solved_2, t_2 = [], [], []
     r_3, solved_3, t_3 = [], [], []
     r_4, solved_4, t_4 = [], [], []
+    r_5, solved_5, t_5 = [], [], []
 
-    tmp = {"instance_size": instance_size}
+    tmp = {"worker_size": worker_size, "task_size": task_size}
 
     for i in range(3):
         # read workers
         workers = list()
         for w_id, pd_ser in pd.read_csv(
-            os.path.join(RESOURCE_PATH, f"worker_{instance_id}/workers{i}.csv")
+                os.path.join(RESOURCE_PATH, f"worker_{instance_id}/workers{i}.csv")
         ).iterrows():
             workers.append(Worker.from_pd_series(w_id, pd_ser))
 
         # read tasks
         tasks = list()
         for t_id, pd_ser in pd.read_csv(
-            os.path.join(RESOURCE_PATH, f"task_{instance_id}/tasks{i}.csv")
+                os.path.join(RESOURCE_PATH, f"task_{instance_id}/tasks{i}.csv")
         ).iterrows():
             tasks.append(Task.from_pd_series(t_id, pd_ser))
 
         # solver 1
         greed_by_reward_solver = GreedyByRewardSolver(
-            workers=workers[:instance_size], tasks=tasks[:instance_size]
+            workers=workers[:worker_size], tasks=tasks[:task_size]
         )
         _r, _solved, _t = greed_by_reward_solver.solve()
         r_1.append(_r)
@@ -52,7 +54,7 @@ def solve(instance_id: int, instance_size: int):
 
         # solver 2
         greed_by_reward_per_workload_solver = GreedyByRewardPerWorkloadSolver(
-            workers=workers[:instance_size], tasks=tasks[:instance_size]
+            workers=workers[:worker_size], tasks=tasks[:task_size]
         )
         _r, _solved, _t = greed_by_reward_per_workload_solver.solve()
         r_2.append(_r)
@@ -61,9 +63,9 @@ def solve(instance_id: int, instance_size: int):
 
         # solver 3
         mip_solver = MIPSolver(
-            workers=workers[:instance_size], tasks=tasks[:instance_size]
+            workers=workers[:worker_size], tasks=tasks[:task_size]
         )
-        _r, _solved, _t = mip_solver.solve()
+        _r, _solved, _t, _ = mip_solver.solve()
         if _r >= 0:
             r_3.append(_r)
             solved_3.append(_solved)
@@ -71,7 +73,7 @@ def solve(instance_id: int, instance_size: int):
 
         # solver 4
         batch_mip_solver = BatchMIPSolver(
-            n=3, workers=workers[:instance_size], tasks=tasks[:instance_size]
+            n=3, workers=workers[:worker_size], tasks=tasks[:task_size]
         )
         _r, _solved, _t = batch_mip_solver.solve()
         if _r >= 0:
@@ -79,8 +81,19 @@ def solve(instance_id: int, instance_size: int):
             solved_4.append(_solved)
             t_4.append(_t)
 
+        # solver 5
+        batch_mip_solver = BatchWithBacklogMIPSolver(
+            n=3, backlog_size=min(worker_size, task_size) // 3, workers=random.sample(workers, k=worker_size),
+            tasks=random.sample(tasks, k=task_size)
+        )
+        _r, _solved, _t = batch_mip_solver.solve()
+        if _r >= 0:
+            r_5.append(_r)
+            solved_5.append(_solved)
+            t_5.append(_t)
+
     print("")
-    print(f"instance size: {instance_size}")
+    print(f"worker size: {worker_size}, task size: {task_size}")
     print("#########################")
     print(f"greedy by reward solver:")
     print(f"avg_reward: {mean(r_1)}, avg_time: {mean(t_1)}, avg_solved: {mean(solved_1)}")
@@ -95,6 +108,10 @@ def solve(instance_id: int, instance_size: int):
     print(f"Batch MIP solver:")
     print(f"avg_reward: {mean(r_4)}, avg_time: {mean(t_4)}, avg_solved: {mean(solved_4)}")
     print(f"solved: {len(r_4)}")
+    print("#########################")
+    print(f"Batch with backlog MIP solver:")
+    print(f"avg_reward: {mean(r_5)}, avg_time: {mean(t_5)}, avg_solved: {mean(solved_5)}")
+    print(f"solved: {len(r_5)}")
     print("#########################")
 
     tmp["r1"] = mean(r_1)
@@ -113,12 +130,17 @@ def solve(instance_id: int, instance_size: int):
     tmp["solved4"] = mean(solved_4)
     tmp["t4"] = mean(t_4)
 
+    tmp["r5"] = mean(r_5)
+    tmp["solved5"] = mean(solved_5)
+    tmp["t5"] = mean(t_5)
+
     return tmp
 
 
 if __name__ == "__main__":
     res = {
-        "instance_size": list(),
+        "worker_size": list(),
+        "task_size": list(),
         "r1": list(),
         "solved1": list(),
         "t1": list(),
@@ -130,22 +152,28 @@ if __name__ == "__main__":
         "t3": list(),
         "r4": list(),
         "solved4": list(),
-        "t4": list()
+        "t4": list(),
+        "r5": list(),
+        "solved5": list(),
+        "t5": list()
     }
 
-    for x in range(10, 110, 10):
-        _res = solve(instance_id=100, instance_size=x)
-        for k in res.keys():
-            res[k].append(_res[k])
+    for x in range(10, 110, 50):
+        for y in range(10, 110, 50):
+            _res = solve(instance_id=100, worker_size=x, task_size=y)
+            for k in res.keys():
+                res[k].append(_res[k])
 
-    for x in range(110, 210, 10):
-        _res = solve(instance_id=200, instance_size=x)
-        for k in res.keys():
-            res[k].append(_res[k])
+    for x in range(110, 210, 50):
+        for y in range(110, 210, 50):
+            _res = solve(instance_id=200, worker_size=x, task_size=y)
+            for k in res.keys():
+                res[k].append(_res[k])
 
-    for x in range(210, 250, 10):
-        _res = solve(instance_id=300, instance_size=x)
-        for k in res.keys():
-            res[k].append(_res[k])
+    for x in range(210, 260, 50):
+        for y in range(210, 260, 50):
+            _res = solve(instance_id=300, worker_size=x, task_size=y)
+            for k in res.keys():
+                res[k].append(_res[k])
 
-    pd.DataFrame(res).to_csv("../resources/results/result_with_batch_oct_12.csv", index=False)
+    pd.DataFrame(res).to_csv("../resources/results/result_with_batch_oct_21.csv", index=False)
