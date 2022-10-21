@@ -26,7 +26,7 @@ def solve(instance_id: int, instance_size: int):
 
     tmp = {"instance_size": instance_size}
 
-    for i in range(5):
+    for i in range(3):
         # read workers
         workers = list()
         for w_id, pd_ser in pd.read_csv(
@@ -71,7 +71,7 @@ def solve(instance_id: int, instance_size: int):
 
         # solver 4
         batch_mip_solver = BatchMIPSolver(
-            n=5, workers=workers[:instance_size], tasks=tasks[:instance_size]
+            n=3, workers=workers[:instance_size], tasks=tasks[:instance_size]
         )
         _r, _solved, _t = batch_mip_solver.solve()
         if _r >= 0:
@@ -140,6 +140,11 @@ if __name__ == "__main__":
 
     for x in range(110, 210, 10):
         _res = solve(instance_id=200, instance_size=x)
+        for k in res.keys():
+            res[k].append(_res[k])
+
+    for x in range(210, 280, 10):
+        _res = solve(instance_id=300, instance_size=x)
         for k in res.keys():
             res[k].append(_res[k])
 

@@ -10,7 +10,7 @@ from pulp import (
     lpDot,
     value,
     LpStatus,
-    LpStatusInfeasible, CPLEX_CMD,
+    CPLEX_CMD,
 )
 from src.pkgs.sovlers.base_solver import BaseSolver
 from src.pkgs.structs.task import Task

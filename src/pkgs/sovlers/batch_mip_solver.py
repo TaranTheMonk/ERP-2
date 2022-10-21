@@ -4,7 +4,6 @@ from src.pkgs.sovlers.base_solver import BaseSolver
 from src.pkgs.sovlers.mip_solver import MIPSolver
 from src.pkgs.structs.task import Task
 from src.pkgs.structs.worker import Worker
-from multiprocessing.pool import ThreadPool
 
 
 class BatchMIPSolver(BaseSolver):
@@ -21,19 +20,9 @@ class BatchMIPSolver(BaseSolver):
     def solve(self) -> Tuple[float, float, float]:
         reward, solved = 0.0, 0.0
         start = time.time()
-        with ThreadPool(self.n * self.n) as p:
-            future_list = list()
-            for w, t in self.batching():
-                if len(w) > 0 and len(t) > 0:
-                    future_list.append(
-                        p.apply_async(
-                            func=lambda x, y: MIPSolver(x, y).solve(),
-                            args=(w, t, )
-                        )
-                    )
-
-            for future in future_list:
-                _reward, _solved, _ = future.get()
+        for w, t in self.batching():
+            if len(w) > 0 and len(t) > 0:
+                _reward, _solved, _ = MIPSolver(w, t).solve()
                 reward += _reward
                 solved += _solved
         end = time.time()
